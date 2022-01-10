@@ -53,34 +53,36 @@ def process_message(client, userdata, message):
         if leaving:
             price = countPrice(time_in, time.ctime())
             # Modify to sqlite database.
-            connention = sqlite3.connect("clients.db")
-            cursor = connention.cursor()
-            cursor.execute("UPDATE clients_log SET out_time = '{0}', price = '{1}' WHERE client = '{2}'".format(time.ctime(), price, message_decoded[0]))
-            connention.commit()
-            connention.close()
-            response_client(message_decoded[0], str(price))
+            connection = sqlite3.connect("clients.db")
+            cursor = connection.cursor()
+            cursor.execute("UPDATE clients_log SET out_time = '{0}', price = '{1}' WHERE client = '{2}' AND in_time = "
+                           "'{3}' "
+                           .format(time.ctime(), price, message_decoded[0], time_in))
+            connection.commit()
+            connection.close()
+            response_client(message_decoded[0], "{0}".format(price))
         else:
             # Save to sqlite database.
-            connention = sqlite3.connect("clients.db")
-            cursor = connention.cursor()
+            connection = sqlite3.connect("clients.db")
+            cursor = connection.cursor()
             cursor.execute("INSERT INTO clients_log VALUES (?,?,?,?)",
                            (message_decoded[0], time.ctime(), None, None))
-            connention.commit()
-            connention.close()
+            connection.commit()
+            connection.close()
             response_client(message_decoded[0])
     else:
         print(message_decoded[0] + " : " + message_decoded[1])
 
 
 def checkClient(client_name):
-    connention = sqlite3.connect("clients.db")
-    cursor = connention.cursor()
+    connection = sqlite3.connect("clients.db")
+    cursor = connection.cursor()
     command = "SELECT * FROM clients_log WHERE client = '{0}'".format(client_name)
     cursor.execute(command)
-    log_entrys = cursor.fetchall()
+    log_entries = cursor.fetchall()
 
-    if log_entrys:
-        log_entry = log_entrys[-1]
+    if log_entries:
+        log_entry = log_entries[-1]
         if log_entry[2] is None:
             return log_entry[1], True
         else:
@@ -102,31 +104,29 @@ def countPrice(time_in, time_out):
 
 
 def print_log_to_window():
-    connention = sqlite3.connect("clients.db")
-    cursor = connention.cursor()
+    connection = sqlite3.connect("clients.db")
+    cursor = connection.cursor()
     cursor.execute("SELECT * FROM clients_log")
-    log_entrys = cursor.fetchall()
+    log_entries = cursor.fetchall()
     labels_log_entry = []
     print_log_window = tkinter.Tk()
 
-    for log_entry in log_entrys:
+    for log_entry in log_entries:
         labels_log_entry.append(tkinter.Label(print_log_window, text=(
             "On %s, %s, %s, %s" % (log_entry[0], log_entry[1], log_entry[2], log_entry[3]))))
 
     for label in labels_log_entry:
         label.pack(side="top")
 
-    connention.commit()
-    connention.close()
+    connection.commit()
+    connection.close()
 
-    # Display this window.
     print_log_window.mainloop()
 
 
 def create_main_window():
     window.geometry("250x100")
     window.title("SERVER")
-    label = tkinter.Label(window, text="Listening to the MQTT")
     exit_button = tkinter.Button(window, text="Stop", command=window.quit)
     print_log_button = tkinter.Button(
         window, text="Print log", command=print_log_to_window)
@@ -135,35 +135,25 @@ def create_main_window():
     print_log_button.pack(side="right")
 
 
-def call_client(client_name):
-    client.publish("client/name", client_name + "." + terminal_id,)
-
-
 def response_client(client_name, msg="Hello"):
-    client.publish("client/response", client_name + "." + terminal_id + "." + msg,)
+    client.publish("client/response/{0}".format(client_name), client_name + "." + terminal_id + "." + msg,)
 
 
 def connect_to_broker():
-    # Connect to the broker.
     client.connect(broker)
-    # Send message about conenction.
     client.on_message = process_message
-    # Starts client and subscribe.
     client.loop_start()
-    client.subscribe("client/name")
+    client.subscribe("client/request/#")
 
 
 def disconnect_from_broker():
-    # Disconnet the client.
     client.loop_stop()
-    #call_worker("Client disconnected")
     client.disconnect()
 
 
 def run_receiver():
     connect_to_broker()
     create_main_window()
-    # Start to display window (It will stay here until window is displayed)
     window.mainloop()
     disconnect_from_broker()
 
@@ -171,5 +161,3 @@ def run_receiver():
 if __name__ == "__main__":
     create_database()
     run_receiver()
-
-
