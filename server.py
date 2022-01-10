@@ -41,37 +41,30 @@ def create_database():
 
 def process_message(client, userdata, message):
     # Decode message.
-    message_decoded = (str(message.payload.decode("utf-8"))).split(".")
+    message_decoded = (str(message.payload.decode("utf-8"))).split(",")
 
-    # Print message to console.
-    if message_decoded[0] != "Client connected" and message_decoded[0] != "Client disconnected":
-        print(time.ctime() + ", " +
-              message_decoded[0])
+    time_in, leaving = checkClient(message_decoded[0])
 
-        time_in, leaving = checkClient(message_decoded[0])
-
-        if leaving:
-            price = countPrice(time_in, time.ctime())
-            # Modify to sqlite database.
-            connection = sqlite3.connect("clients.db")
-            cursor = connection.cursor()
-            cursor.execute("UPDATE clients_log SET out_time = '{0}', price = '{1}' WHERE client = '{2}' AND in_time = "
-                           "'{3}' "
-                           .format(time.ctime(), price, message_decoded[0], time_in))
-            connection.commit()
-            connection.close()
-            response_client(message_decoded[0], "{0}".format(price))
-        else:
-            # Save to sqlite database.
-            connection = sqlite3.connect("clients.db")
-            cursor = connection.cursor()
-            cursor.execute("INSERT INTO clients_log VALUES (?,?,?,?)",
-                           (message_decoded[0], time.ctime(), None, None))
-            connection.commit()
-            connection.close()
-            response_client(message_decoded[0])
+    if leaving:
+        price, time_diff = countPrice(time_in, time.ctime())
+        # Modify to sqlite database.
+        connection = sqlite3.connect("clients.db")
+        cursor = connection.cursor()
+        cursor.execute("UPDATE clients_log SET out_time = '{0}', price = '{1}' WHERE client = '{2}' AND in_time = "
+                       "'{3}' "
+                       .format(time.ctime(), price, message_decoded[0], time_in))
+        connection.commit()
+        connection.close()
+        response_client(message_decoded[0], "{0} , {1}".format(price, time_diff))
     else:
-        print(message_decoded[0] + " : " + message_decoded[1])
+        # Save to sqlite database.
+        connection = sqlite3.connect("clients.db")
+        cursor = connection.cursor()
+        cursor.execute("INSERT INTO clients_log VALUES (?,?,?,?)",
+                       (message_decoded[0], time.ctime(), None, None))
+        connection.commit()
+        connection.close()
+        response_client(message_decoded[0])
 
 
 def checkClient(client_name):
@@ -100,7 +93,7 @@ def countPrice(time_in, time_out):
                                       minutes=time_out_con.tm_min, seconds=time_out_con.tm_sec).total_seconds()
 
     time_diff = time_out_sec - time_in_sec
-    return round(time_diff/60 * PRICE_MULTIPLIER, 2)
+    return round(time_diff / 60 * PRICE_MULTIPLIER, 2), time_diff
 
 
 def print_log_to_window():
@@ -123,6 +116,8 @@ def print_log_to_window():
 
     print_log_window.mainloop()
 
+    # return log_entries
+
 
 def create_main_window():
     window.geometry("250x100")
@@ -136,7 +131,7 @@ def create_main_window():
 
 
 def response_client(client_name, msg="Hello"):
-    client.publish("client/response/{0}".format(client_name), client_name + "." + terminal_id + "." + msg,)
+    client.publish("client/response/{0}".format(client_name), client_name + "," + terminal_id + "," + msg,)
 
 
 def connect_to_broker():
