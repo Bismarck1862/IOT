@@ -1,11 +1,10 @@
 import datetime
+import sqlite3
 
 import paho.mqtt.client as mqtt
 import tkinter
-import sqlite3
 import time
 import sys
-import os
 
 # The broker name or IP address.
 broker = sys.argv[1]
@@ -20,23 +19,6 @@ client = mqtt.Client()
 
 # Thw main window.
 window = tkinter.Tk()
-
-
-def create_database():
-    if os.path.exists("clients.db"):
-        os.remove("clients.db")
-        print("An old database removed.")
-    connection = sqlite3.connect("clients.db")
-    cursor = connection.cursor()
-    cursor.execute(""" CREATE TABLE clients_log (
-        client text,
-        in_time text,
-        out_time text,
-        price text
-    )""")
-    connection.commit()
-    connection.close()
-    print("The new database created.")
 
 
 def process_message(client, userdata, message):
@@ -154,5 +136,4 @@ def run_receiver():
 
 
 if __name__ == "__main__":
-    create_database()
     run_receiver()
