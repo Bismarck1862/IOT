@@ -26,18 +26,18 @@ def process_message(client, userdata, message):
     # Decode message.
     message_decoded = (str(message.payload.decode("utf-8"))).split(",")
 
-    if len(message_decoded) == 4:
+    if len(message_decoded) == 3:
         print(time.ctime() + ", " +
-              message_decoded[0] + ", price: " + message_decoded[2] + ", time: " + message_decoded[3])
+              message_decoded[0] + ", price: " + message_decoded[1] + ", time: " + message_decoded[2])
         client.unsubscribe("client/response/{0}".format(message_decoded[0]))
     else:
         print(time.ctime() + ", " +
-              message_decoded[0] + ", " + message_decoded[2])
+              message_decoded[0] + ", " + message_decoded[1])
 
 
 def call_server(client_name):
     client.subscribe("client/response/{0}".format(client_name))
-    client.publish("client/request/{0}".format(client_name), client_name + "," + terminal_id, )
+    client.publish("client/request/{0}".format(client_name), client_name, )
 
 
 def create_main_window(ip):

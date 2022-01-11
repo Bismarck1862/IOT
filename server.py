@@ -12,8 +12,6 @@ broker = sys.argv[1]
 
 PRICE_MULTIPLIER = 20
 
-terminal_id = "T0"
-
 # The MQTT client.
 client = mqtt.Client()
 
@@ -25,34 +23,53 @@ def process_message(client, userdata, message):
     # Decode message.
     message_decoded = (str(message.payload.decode("utf-8"))).split(",")
 
-    time_in, leaving = checkClient(message_decoded[0])
+    client_id = get_id_from_ip(message_decoded[0])
+    time_in, leaving = check_client(client_id)
 
-    if leaving:
-        price, time_diff = countPrice(time_in, time.ctime())
-        # Modify to sqlite database.
-        connection = sqlite3.connect("clients.db")
-        cursor = connection.cursor()
-        cursor.execute("UPDATE clients_log SET out_time = '{0}', price = '{1}' WHERE client = '{2}' AND in_time = "
-                       "'{3}' "
-                       .format(time.ctime(), price, message_decoded[0], time_in))
-        connection.commit()
-        connection.close()
-        response_client(message_decoded[0], "{0} , {1}".format(price, time_diff))
+    if client_id is not None:
+        if leaving:
+            price, time_diff = count_price(time_in, time.ctime())
+            # Modify to sqlite database.
+            connection = sqlite3.connect("clients.db")
+            cursor = connection.cursor()
+            cursor.execute("UPDATE clients_log SET out_time = '{0}', price = '{1}' WHERE id = '{2}' AND in_time = "
+                           "'{3}' "
+                           .format(time.ctime(), price, client_id, time_in))
+            connection.commit()
+            connection.close()
+            response_client(message_decoded[0], "{0} , {1}".format(price, time_diff))
+        else:
+            # Save to sqlite database.
+            connection = sqlite3.connect("clients.db")
+            cursor = connection.cursor()
+            cursor.execute("INSERT INTO clients_log VALUES (?,?,?,?)",
+                           (client_id, time.ctime(), None, None))
+            connection.commit()
+            connection.close()
+            response_client(message_decoded[0])
     else:
-        # Save to sqlite database.
-        connection = sqlite3.connect("clients.db")
-        cursor = connection.cursor()
-        cursor.execute("INSERT INTO clients_log VALUES (?,?,?,?)",
-                       (message_decoded[0], time.ctime(), None, None))
-        connection.commit()
-        connection.close()
-        response_client(message_decoded[0])
+        response_client(message_decoded[0], "Sorry you are not registered")
 
 
-def checkClient(client_name):
+def get_id_from_ip(client_ip):
     connection = sqlite3.connect("clients.db")
     cursor = connection.cursor()
-    command = "SELECT * FROM clients_log WHERE client = '{0}'".format(client_name)
+    command = "SELECT * FROM clients WHERE ip_address = '{0}'".format(client_ip)
+    cursor.execute(command)
+    log_entries = cursor.fetchall()
+
+    if log_entries:
+        log_entry = log_entries[-1]
+        return log_entry[0]
+    else:
+        return None
+
+
+def check_client(client_id):
+    connection = sqlite3.connect("clients.db")
+    cursor = connection.cursor()
+    print(client_id)
+    command = "SELECT * FROM clients_log WHERE id = '{0}'".format(client_id)
     cursor.execute(command)
     log_entries = cursor.fetchall()
 
@@ -60,13 +77,10 @@ def checkClient(client_name):
         log_entry = log_entries[-1]
         if log_entry[2] is None:
             return log_entry[1], True
-        else:
-            return None, False
-    else:
-        return None, False
+    return None, False
 
 
-def countPrice(time_in, time_out):
+def count_price(time_in, time_out):
     time_in_con = time.strptime(time_in, "%c")
     time_out_con = time.strptime(time_out, "%c")
     time_in_sec = datetime.timedelta(days=time_in_con.tm_mday, hours=time_in_con.tm_hour,
@@ -81,14 +95,14 @@ def countPrice(time_in, time_out):
 def print_log_to_window():
     connection = sqlite3.connect("clients.db")
     cursor = connection.cursor()
-    cursor.execute("SELECT * FROM clients_log")
+    cursor.execute("SELECT * FROM clients_log JOIN clients USING(id)")
     log_entries = cursor.fetchall()
     labels_log_entry = []
     print_log_window = tkinter.Tk()
 
     for log_entry in log_entries:
         labels_log_entry.append(tkinter.Label(print_log_window, text=(
-            "On %s, %s, %s, %s" % (log_entry[0], log_entry[1], log_entry[2], log_entry[3]))))
+            "On %s, %s, %s, %s" % (log_entry[4], log_entry[1], log_entry[2], log_entry[3]))))
 
     for label in labels_log_entry:
         label.pack(side="top")
@@ -112,8 +126,8 @@ def create_main_window():
     print_log_button.pack(side="right")
 
 
-def response_client(client_name, msg="Hello"):
-    client.publish("client/response/{0}".format(client_name), client_name + "," + terminal_id + "," + msg,)
+def response_client(client_ip, msg="Hello"):
+    client.publish("client/response/{0}".format(client_ip), client_ip + "," + msg,)
 
 
 def connect_to_broker():

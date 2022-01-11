@@ -9,14 +9,14 @@ def create_database():
     connection = sqlite3.connect("clients.db")
     cursor = connection.cursor()
     cursor.execute(""" CREATE TABLE clients_log (
-        client text,
+        id INTEGER,
         in_time text,
         out_time text,
         price text
     )""")
 
     cursor.execute(""" CREATE TABLE clients (
-        id INTEGER PRIMARY KEY,
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
         ip_address varchar(20) NOT NULL
     )""")
     connection.commit()
