@@ -29,4 +29,3 @@ po otrzymaniu odpowiedzi klient przestaje subskrybować dany temat
 - ustawienie qos
 - autoryzacja
 
-
