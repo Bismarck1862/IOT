@@ -37,6 +37,7 @@ po otrzymaniu odpowiedzi klient przestaje subskrybować dany temat
 
 ### server.py
 - Wyczyszczenie kodu z komentarzy
+- Zmiana interpolacji stringów: .fromat() -> f""
 - Dodanie logów
 - Ujednolicenie czasu (obecny czas (`curr_time = time.ctime()`) jest pobierany raz i ten czas jest zapisywany do bazy danych oraz przesyłane clientowi, aby nie było różnicy w czasie wyświetlenia go w logach serwera, clienta oraz w bazie danych)
 - Nowy sposóbu przesyłu responsów:
