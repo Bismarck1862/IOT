@@ -29,3 +29,23 @@ po otrzymaniu odpowiedzi klient przestaje subskrybować dany temat
 - ustawienie qos
 - autoryzacja
 
+# Kacper CHANGELOG
+### client.py:
+- Wyczyszczenie kodu
+- Dodadnie logów
+- Pobieranie w inny, prostszy sposób adresu ip klienta
+
+### server.py
+- Wyczyszczenie kodu z komentarzy
+- Dodanie logów
+- Ujednolicenie czasu (obecny czas (`curr_time = time.ctime()`) jest pobierany raz i ten czas jest zapisywany do bazy danych oraz przesyłane clientowi, aby nie było różnicy w czasie wyświetlenia go w logach serwera, clienta oraz w bazie danych)
+- Nowy sposóbu przesyłu responsów:
+-- Zmiana oddzielania inforamcji: ',' -> '@'
+-- Dodanie informacji o czasie w przesyłanym responsie (aby client nie pobierał go u siebie osobno (patrz: zmiana `Ujednolicenie czasu`)
+-- Zrezygnowanie z przesyłania `msg="Hello"`
+-- Zrezygnowania z przesyłania w responsie `client_ip`
+
+* Nowy schemat przsyłania responsów:
+-- WEJŚCIE (1 odbicie): response = `"czas_odbicia_wejścia"`
+-- WYJŚCIE (2 odbicie): response = `"czas_odbicia_wyjścia@cena@czas_przejazdu"`
+-- JEŻELI KLIENT NIE JEST ZAREJSTROWANY: response = `"czas_odbicia@error_msg"` (gdzie `error_msg = "Sorry, you are not registered!"`)

@@ -43,8 +43,6 @@ def disconnect_from_broker():
 def process_message(client, _, message):
     message_decoded = (str(message.payload.decode("utf-8"))).split("@")
 
-    print(message_decoded)
-
     if len(message_decoded) == 1:
         print(f"timestamp: {message_decoded[0]}")
     elif len(message_decoded) == 2:
