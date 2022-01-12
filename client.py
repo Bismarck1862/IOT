@@ -1,57 +1,26 @@
 #!/usr/bin/env python3
-import time
 
 import paho.mqtt.client as mqtt
 import tkinter
 import sys
 import socket
 
-# The terminal ID - can be any string.
-terminal_id = "T0"
-# The broker name or IP address.
 broker = sys.argv[1]
 name = sys.argv[2]
-# broker = "localhost"
 
-# The MQTT client.
 client = mqtt.Client()
+client_ip = ''
 
-# The main window with buttons to simulate the RFID card usage.
 window = tkinter.Tk()
 
-list_of_topics = list()
+def run_sender():
+    connect_to_broker()
+    client_ip = get_client_address_ip()
+    create_main_window(client_ip)
 
+    window.mainloop()
 
-def process_message(client, userdata, message):
-    # Decode message.
-    message_decoded = (str(message.payload.decode("utf-8"))).split(",")
-
-    if len(message_decoded) == 3:
-        print(time.ctime() + ", " +
-              message_decoded[0] + ", price: " + message_decoded[1] + ", time: " + message_decoded[2])
-        client.unsubscribe("client/response/{0}".format(message_decoded[0]))
-    else:
-        print(time.ctime() + ", " +
-              message_decoded[0] + ", " + message_decoded[1])
-
-
-def call_server(client_name):
-    client.subscribe("client/response/{0}".format(client_name))
-    client.publish("client/request/{0}".format(client_name), client_name, )
-
-
-def create_main_window(ip):
-    window.geometry("300x200")
-    window.title("SENDER " + name)
-
-    intro_label = tkinter.Label(window, text="Select employee:")
-    intro_label.grid(row=0, columnspan=5)
-
-    button_1 = tkinter.Button(window, text="Call",
-                              command=lambda: call_server(ip))
-    button_1.grid(row=1, column=0)
-    button_stop = tkinter.Button(window, text="Stop", command=window.quit)
-    button_stop.grid(row=4, columnspan=2)
+    disconnect_from_broker()
 
 
 def connect_to_broker():
@@ -60,11 +29,9 @@ def connect_to_broker():
     client.loop_start()
 
 
-def get_identifier():
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    s.connect(("8.8.8.8", 80))
-    ip = s.getsockname()[0]
-    s.close()
+def get_client_address_ip():
+    hostname = socket.gethostname()
+    ip = socket.gethostbyname(hostname)
     return ip
 
 
@@ -73,13 +40,37 @@ def disconnect_from_broker():
     client.disconnect()
 
 
-def run_sender():
-    connect_to_broker()
-    create_main_window(get_identifier())
+def process_message(client, _, message):
+    message_decoded = (str(message.payload.decode("utf-8"))).split("@")
 
-    window.mainloop()
+    if len(message_decoded) == 1:
+        print(f"timestamp: {message_decoded[0]}")
+    elif len(message_decoded) == 2:
+        print(f"timestamp: {message_decoded[0]} | error_msg: {message_decoded[1]}")
+    elif len(message_decoded) == 3:
+        print(f"timestamp: {message_decoded[0]} | price: {message_decoded[1]} | time: {message_decoded[2]}")
+        client.unsubscribe(f"client/response/{client_ip}")
+    else:
+        print(">>> Unsupported format of response message!")
 
-    disconnect_from_broker()
+
+def call_server(client_address_ip):
+    client.subscribe(f"client/response/{client_address_ip}")
+    client.publish(f"client/request/{client_address_ip}", client_address_ip)
+
+
+def create_main_window(client_address_ip):
+    window.geometry("300x200")
+    window.title("SENDER " + name)
+
+    intro_label = tkinter.Label(window, text="Select employee:")
+    intro_label.grid(row=0, columnspan=5)
+
+    button_1 = tkinter.Button(window, text="Call",
+                              command=lambda: call_server(client_address_ip))
+    button_1.grid(row=1, column=0)
+    button_stop = tkinter.Button(window, text="Stop", command=window.quit)
+    button_stop.grid(row=4, columnspan=2)
 
 
 if __name__ == "__main__":

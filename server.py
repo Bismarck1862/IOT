@@ -6,55 +6,52 @@ import tkinter
 import time
 import sys
 
-# The broker name or IP address.
 broker = sys.argv[1]
-# broker = "localhost"
 
 PRICE_MULTIPLIER = 20
 
-# The MQTT client.
 client = mqtt.Client()
 
-# Thw main window.
 window = tkinter.Tk()
 
 
 def process_message(client, userdata, message):
-    # Decode message.
-    message_decoded = (str(message.payload.decode("utf-8"))).split(",")
+    message_decoded = (str(message.payload.decode("utf-8"))).split("@")
 
     client_id = get_id_from_ip(message_decoded[0])
     time_in, leaving = check_client(client_id)
 
+    curr_time = time.ctime()
+    
     if client_id is not None:
         if leaving:
-            price, time_diff = count_price(time_in, time.ctime())
-            # Modify to sqlite database.
+            price, time_diff = count_price(time_in, curr_time)
             connection = sqlite3.connect("clients.db")
             cursor = connection.cursor()
-            cursor.execute("UPDATE clients_log SET out_time = '{0}', price = '{1}' WHERE id = '{2}' AND in_time = "
-                           "'{3}' "
-                           .format(time.ctime(), price, client_id, time_in))
+
+            cursor.execute(f"UPDATE clients_log SET out_time = '{curr_time}', price = '{price}' WHERE id = '{client_id}' AND in_time = '{time_in}'")
             connection.commit()
             connection.close()
-            response_client(message_decoded[0], "{0} , {1}".format(price, time_diff))
+
+            print(f"client: {client_id} ({message_decoded[0]}) at {curr_time} get OUT | price: {price} | time: {time_diff}")
+            response_client(message_decoded[0], curr_time, f"{price} @ {time_diff}")
         else:
-            # Save to sqlite database.
             connection = sqlite3.connect("clients.db")
             cursor = connection.cursor()
-            cursor.execute("INSERT INTO clients_log VALUES (?,?,?,?)",
-                           (client_id, time.ctime(), None, None))
+            cursor.execute("INSERT INTO clients_log VALUES (?,?,?,?)", (client_id, curr_time, None, None))
             connection.commit()
             connection.close()
-            response_client(message_decoded[0])
+            print(f"client: {client_id} ({message_decoded[0]}) at {curr_time} get IN")
+            response_client(message_decoded[0], curr_time)
     else:
-        response_client(message_decoded[0], "Sorry you are not registered")
+        print(f"client_address_ip: {message_decoded[0]} at {curr_time} was NOT FOUND in database!")
+        response_client(message_decoded[0], curr_time, "Sorry, you are not registered!")
 
 
 def get_id_from_ip(client_ip):
     connection = sqlite3.connect("clients.db")
     cursor = connection.cursor()
-    command = "SELECT * FROM clients WHERE ip_address = '{0}'".format(client_ip)
+    command = f"SELECT * FROM clients WHERE ip_address = '{client_ip}'"
     cursor.execute(command)
     log_entries = cursor.fetchall()
 
@@ -68,8 +65,7 @@ def get_id_from_ip(client_ip):
 def check_client(client_id):
     connection = sqlite3.connect("clients.db")
     cursor = connection.cursor()
-    print(client_id)
-    command = "SELECT * FROM clients_log WHERE id = '{0}'".format(client_id)
+    command = f"SELECT * FROM clients_log WHERE id = '{client_id}'"
     cursor.execute(command)
     log_entries = cursor.fetchall()
 
@@ -112,8 +108,6 @@ def print_log_to_window():
 
     print_log_window.mainloop()
 
-    # return log_entries
-
 
 def create_main_window():
     window.geometry("250x100")
@@ -126,9 +120,12 @@ def create_main_window():
     print_log_button.pack(side="right")
 
 
-def response_client(client_ip, msg="Hello"):
-    client.publish("client/response/{0}".format(client_ip), client_ip + "," + msg,)
-
+def response_client(client_ip, time, msg=None):
+    if msg is None:
+        client.publish(f"client/response/{client_ip}", f"{time}")
+    else:
+        client.publish(f"client/response/{client_ip}", f"{time}@{msg}")
+        
 
 def connect_to_broker():
     client.connect(broker)
