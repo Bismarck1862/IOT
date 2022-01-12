@@ -51,7 +51,7 @@ def process_message(client, userdata, message):
 def get_id_from_ip(client_ip):
     connection = sqlite3.connect("clients.db")
     cursor = connection.cursor()
-    command = "SELECT * FROM clients WHERE ip_address = '{0}'".format(client_ip)
+    command = f"SELECT * FROM clients WHERE ip_address = '{client_ip}'"
     cursor.execute(command)
     log_entries = cursor.fetchall()
 
@@ -65,7 +65,7 @@ def get_id_from_ip(client_ip):
 def check_client(client_id):
     connection = sqlite3.connect("clients.db")
     cursor = connection.cursor()
-    command = "SELECT * FROM clients_log WHERE id = '{0}'".format(client_id)
+    command = f"SELECT * FROM clients_log WHERE id = '{client_id}'"
     cursor.execute(command)
     log_entries = cursor.fetchall()
 
