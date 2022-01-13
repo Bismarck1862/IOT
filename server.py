@@ -5,6 +5,7 @@ import paho.mqtt.client as mqtt
 import tkinter
 import time
 import sys
+import csv
 
 broker = sys.argv[1]
 
@@ -109,6 +110,24 @@ def print_log_to_window():
     print_log_window.mainloop()
 
 
+def export_to_csv():
+    connection = sqlite3.connect("clients.db")
+    cursor = connection.cursor()
+    cursor.execute("SELECT * FROM clients_log JOIN clients USING(id)")
+    log_entries = cursor.fetchall()
+
+    with open('clients_file.csv', mode='w') as csv_file:
+        fieldnames = ['ip', 'in_time', 'out_time', 'price']
+        writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
+
+        writer.writeheader()
+        for log_entry in log_entries:
+            writer.writerow({'ip': log_entry[4], 'in_time': log_entry[1], 'out_time': log_entry[2], 'price': log_entry[3]})
+
+    connection.commit()
+    connection.close()
+
+
 def create_main_window():
     window.geometry("250x100")
     window.title("SERVER")
@@ -116,8 +135,12 @@ def create_main_window():
     print_log_button = tkinter.Button(
         window, text="Print log", command=print_log_to_window)
 
+    export_button = tkinter.Button(
+        window, text="Export", command=export_to_csv)
+
     exit_button.pack(side="right")
     print_log_button.pack(side="right")
+    export_button.pack(side="right")
 
 
 def response_client(client_ip, time, msg=None):
