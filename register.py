@@ -1,14 +1,19 @@
 import sqlite3
-import sys
+from PySide2.QtCore import QObject, Signal
 
 
-def register_client(client_ip):
-    connection = sqlite3.connect("clients.db")
-    cursor = connection.cursor()
-    cursor.execute("INSERT INTO clients VALUES (?, ?)", (None, client_ip))
-    connection.commit()
-    connection.close()
 
+class IpRegister(QObject):
+    register_ready = Signal()
 
-if __name__ == "__main__":
-    register_client(sys.argv[1])
+    def __init__(self, parent=None):
+        super(IpRegister, self).__init__(parent)
+
+    def register_client(self, client_ip):
+        print(client_ip)
+        connection = sqlite3.connect("clients.db")
+        cursor = connection.cursor()
+        cursor.execute("INSERT INTO clients VALUES (?, ?)", (None, client_ip))
+        connection.commit()
+        connection.close()
+        self.register_ready.emit()

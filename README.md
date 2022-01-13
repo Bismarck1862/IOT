@@ -50,3 +50,14 @@ po otrzymaniu odpowiedzi klient przestaje subskrybować dany temat
 -- WEJŚCIE (1 odbicie): response = `"czas_odbicia_wejścia"`
 -- WYJŚCIE (2 odbicie): response = `"czas_odbicia_wyjścia@cena@czas_przejazdu"`
 -- JEŻELI KLIENT NIE JEST ZAREJSTROWANY: response = `"czas_odbicia@error_msg"` (gdzie `error_msg = "Sorry, you are not registered!"`)
+  
+# Pyoter CHANGELOG
+* Zmiana nazw plików:
+-- server.py oraz client.py służą tylko do odpalania gui
+-- server_connector.py i client_connector.py służą do komunikacji pomiędzy gui, a resztą aplikacji (tego nie ruszać)
+-- server_functions.py i client_functions.py zawierają wszystkie funkcje powiązane z mqtt (stare server.py i client.py)
+* Wprowadzenie klas i obiektów - framework, którego używałem zmusza do takiego podejścia
+* Dodanie sygnałów umożliwiających komunikację z connectorami w celu wysyłania odpowiednich informacji o wykonanych akcjach 
+* W przypadku serwera może po zamknięciu okienka pojawiać się błąd, ale jest on związany ze złą kolejnością usuwania obiektów i nie ma się czym martwić (postaram się naprawić)
+* Do uruchomienia gui potrzebna jest biblioteka Pyside2, najlepiej ją dodać za pomocą `pip install Pyside2`
+* Uruchamianie programu przebiega w dokładnie taki sam sposób jak wcześniej (gui mają tylko client i server, ponieważ database i broker to w zasadzie pojedyncze funkcje)
