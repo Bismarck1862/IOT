@@ -19,6 +19,9 @@ Item {
         id: databaseClearedDialog
     }
 
+    DeleteRegisterDialog{
+        id: deleteRegisterDialog
+    }
 
     Rectangle {
         id: main
@@ -154,8 +157,8 @@ Item {
 
         palette.buttonText: "white"
         onClicked: {
+            serverConnector.on_delete_register(textInputId.text)
             textInputId.text = ""
-
         }
 
     }
@@ -180,6 +183,10 @@ Item {
 
         function onShowClearDialog(){
             databaseClearedDialog.visible = true
+        }
+
+        function onShowDeleteRegisterDialog(){
+            deleteRegisterDialog.visible = true
         }
     }
 }

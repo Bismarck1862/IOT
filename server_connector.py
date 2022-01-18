@@ -13,6 +13,7 @@ class ServerConnector(QObject):
     showDeleteDialog = Signal()
     showClearDialog = Signal()
     showExportDialog = Signal()
+    showDeleteRegisterDialog = Signal()
 
     def __init__(self, broker, parent=None):
         super(ServerConnector, self).__init__(parent)
@@ -26,6 +27,7 @@ class ServerConnector(QObject):
         self.register.register_ready.connect(self.showRegisterDialog)
         self.server_obj.export_ready.connect(self.showExportDialog)
         self.database.clear_ready.connect(self.showClearDialog)
+        self.register.register_delete_ready.connect(self.showDeleteRegisterDialog)
 
     def model(self):
         return self._model
@@ -42,6 +44,10 @@ class ServerConnector(QObject):
     def on_register_ip(self, ip):
         self.register.register_client(ip)
 
+    @Slot(str)
+    def on_delete_register(self, ip):
+        self.register.unregister_client(ip)
+
     @Slot()
     def on_export(self):
         self.server_obj.export_to_csv()
@@ -50,7 +56,7 @@ class ServerConnector(QObject):
     def on_database_clear(self):
         self.database.create_database()
 
-    def accept_register(self):
-        self.showRegisterDialog.emit()
+    # def accept_register(self):
+    #     self.showRegisterDialog.emit()
 
     model = QtCore.Property(QtCore.QObject, fget=model, constant=True)

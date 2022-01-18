@@ -17,6 +17,33 @@ def display_data():
     connection.close()
 
 
+def create_database():
+    if os.path.exists("clients.db"):
+        os.remove("clients.db")
+        print("An old database removed.")
+    connection = sqlite3.connect("clients.db")
+    cursor = connection.cursor()
+    cursor.execute(""" CREATE TABLE clients_log (
+            id INTEGER,
+            in_time text,
+            out_time text,
+            price text
+        )""")
+
+    cursor.execute(""" CREATE TABLE clients (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            ip_address varchar(20) NOT NULL
+        )""")
+
+    cursor.execute(""" CREATE TABLE registered_clients (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            ip_address varchar(20) NOT NULL
+        )""")
+    
+    connection.commit()
+    connection.close()
+
+
 class Database(QObject):
     clear_ready = Signal()
 
@@ -24,24 +51,7 @@ class Database(QObject):
         super().__init__(parent)
 
     def create_database(self):
-        if os.path.exists("clients.db"):
-            os.remove("clients.db")
-            print("An old database removed.")
-        connection = sqlite3.connect("clients.db")
-        cursor = connection.cursor()
-        cursor.execute(""" CREATE TABLE clients_log (
-            id INTEGER,
-            in_time text,
-            out_time text,
-            price text
-        )""")
-
-        cursor.execute(""" CREATE TABLE clients (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            ip_address varchar(20) NOT NULL
-        )""")
-        connection.commit()
-        connection.close()
+        create_database()
         self.clear_ready.emit()
 
 

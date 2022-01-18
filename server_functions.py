@@ -13,7 +13,8 @@ PRICE_MULTIPLIER = 20
 def get_id_from_ip(client_ip):
     connection = sqlite3.connect("clients.db")
     cursor = connection.cursor()
-    command = f"SELECT * FROM clients WHERE ip_address = '{client_ip}'"
+    # command = f"SELECT * FROM clients WHERE ip_address = '{client_ip}'"
+    command = f"SELECT * FROM registered_clients WHERE ip_address = '{client_ip}'"
     cursor.execute(command)
     log_entries = cursor.fetchall()
 
