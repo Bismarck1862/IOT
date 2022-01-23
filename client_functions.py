@@ -2,6 +2,8 @@ import paho.mqtt.client as mqtt
 import socket
 from PySide2.QtCore import QObject, Signal
 
+QOS = 2
+
 
 def get_client_address_ip():
     hostname = socket.gethostname()
@@ -45,4 +47,4 @@ class Client(QObject):
 
     def call_server(self):
         self.client.subscribe(f"client/response/{self.client_ip}")
-        self.client.publish(f"client/request/{self.client_ip}", self.client_ip)
+        self.client.publish(f"client/request/{self.client_ip}", self.client_ip, QOS)

@@ -8,6 +8,7 @@ import sys
 from PySide2.QtCore import QObject, Signal
 
 PRICE_MULTIPLIER = 20
+QOS = 2
 
 
 def get_id_from_ip(client_ip):
@@ -78,9 +79,9 @@ class Server(QObject):
 
     def response_client(self, client_ip, time, msg=None):
         if msg is None:
-            self.client.publish(f"client/response/{client_ip}", f"{time}")
+            self.client.publish(f"client/response/{client_ip}", f"{time}", QOS)
         else:
-            self.client.publish(f"client/response/{client_ip}", f"{time}@{msg}")
+            self.client.publish(f"client/response/{client_ip}", f"{time}@{msg}", QOS)
 
     def connect_to_broker(self):
         self.client.connect(self.broker)
